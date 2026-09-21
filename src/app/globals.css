@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #06070a;
+  --panel: #0e1016;
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #e7e9ee;
+  --muted: #8b93a7;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2a3345 transparent;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* MapLibre chrome overrides */
+.maplibregl-ctrl-attrib {
+  background: rgba(6, 7, 10, 0.6) !important;
+  color: #8b93a7 !important;
+  font-size: 10px !important;
+}
+.maplibregl-ctrl-attrib a {
+  color: #8b93a7 !important;
+}
+.maplibregl-ctrl-zoom {
+  background: rgba(14, 16, 22, 0.85) !important;
+  border: 1px solid var(--border) !important;
+  backdrop-filter: blur(8px);
+}
+.maplibregl-ctrl-zoom button {
+  background: transparent !important;
+  border: none !important;
+  color: #e7e9ee !important;
+  font-size: 16px;
+}
+
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.live-dot {
+  animation: pulse-live 1.6s ease-in-out infinite;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up {
+  animation: fade-up 0.5s ease-out both;
+}

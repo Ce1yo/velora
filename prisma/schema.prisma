@@ -1,0 +1,118 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model System {
+  id               String    @id // GBFS system_id from the MobilityData catalog
+  name             String
+  city             String?
+  country          String? // ISO country code
+  operator         String?
+  url              String? // consumer-facing website
+  gbfsUrl          String
+  gbfsVersion      String?
+  timezone         String?
+  language         String?
+  lat              Float? // centroid of stations (derived)
+  lon              Float?
+  stationCount     Int?
+  vehicleTypesJson String? // normalized JSON of vehicle_types feed
+  hasEbikes        Boolean   @default(false)
+  feedStatus       String    @default("UNKNOWN") // LIVE | ERROR | UNREACHABLE | UNKNOWN
+  feedError        String?
+  lastCheckedAt    DateTime?
+  lastCollectedAt  DateTime?
+  priority         Int       @default(0) // higher = collected/enriched first
+  enabled          Boolean   @default(false) // polled by the snapshot worker
+  stations         Station[]
+  snapshots        SystemSnapshot[]
+  logs             CollectionLog[]
+  trips            Trip[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model Station {
+  id        String            @id // `${systemId}:${gbfs station_id}`
+  systemId  String
+  stationId String // raw GBFS station_id
+  name      String
+  lat       Float
+  lon       Float
+  capacity  Int?
+  regionId  String?
+  system    System            @relation(fields: [systemId], references: [id], onDelete: Cascade)
+  snapshots StationSnapshot[]
+
+  @@index([systemId])
+  @@index([systemId, stationId])
+}
+
+model StationSnapshot {
+  id               Int      @id @default(autoincrement())
+  stationId        String // FK -> Station.id
+  systemId         String
+  ts               DateTime
+  bikesAvailable   Int
+  docksAvailable   Int
+  ebikesAvailable  Int?
+  isRenting        Boolean
+  isReturning      Boolean
+  isInstalled      Boolean
+  station          Station  @relation(fields: [stationId], references: [id], onDelete: Cascade)
+
+  @@index([systemId, ts])
+  @@index([stationId, ts])
+}
+
+model SystemSnapshot {
+  id               Int      @id @default(autoincrement())
+  systemId         String
+  ts               DateTime
+  stationCount     Int
+  bikesAvailable   Int
+  docksAvailable   Int
+  ebikesAvailable  Int?
+  emptyStations    Int
+  fullStations     Int
+  disabledStations Int
+  availability     Float // bikes / (bikes + docks)
+  system           System   @relation(fields: [systemId], references: [id], onDelete: Cascade)
+
+  @@index([systemId, ts])
+}
+
+model CollectionLog {
+  id           Int      @id @default(autoincrement())
+  systemId     String
+  ts           DateTime @default(now())
+  kind         String   @default("STATUS") // STATUS | INFO | ENRICH | CATALOG
+  ok           Boolean
+  durationMs   Int
+  stationCount Int?
+  error        String?
+  system       System   @relation(fields: [systemId], references: [id], onDelete: Cascade)
+
+  @@index([systemId, ts])
+}
+
+// Public, aggregated trip datasets — only when an operator publishes them.
+// Never reconstructed from inventory changes.
+model Trip {
+  id             String    @id
+  systemId       String
+  startTime      DateTime
+  endTime        DateTime?
+  startStationId String?
+  endStationId   String?
+  durationS      Int?
+  bikeType       String?
+  system         System    @relation(fields: [systemId], references: [id], onDelete: Cascade)
+
+  @@index([systemId, startTime])
+}
