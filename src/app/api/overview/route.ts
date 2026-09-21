@@ -15,10 +15,10 @@ export async function GET() {
   ]);
 
   const bikesRows = await prisma.$queryRaw<{ bikes: bigint | number | null }[]>`
-    SELECT COALESCE(SUM(s.bikesAvailable), 0) AS bikes
-    FROM SystemSnapshot s
-    INNER JOIN (SELECT systemId, MAX(ts) AS m FROM SystemSnapshot GROUP BY systemId) t
-      ON s.systemId = t.systemId AND s.ts = t.m
+    SELECT COALESCE(SUM(s."bikesAvailable"), 0) AS bikes
+    FROM "SystemSnapshot" s
+    INNER JOIN (SELECT "systemId", MAX("ts") AS m FROM "SystemSnapshot" GROUP BY "systemId") t
+      ON s."systemId" = t."systemId" AND s."ts" = t.m
   `;
   const bikes = Number(bikesRows[0]?.bikes ?? 0);
 

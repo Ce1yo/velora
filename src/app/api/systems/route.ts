@@ -17,10 +17,10 @@ export async function GET(req: NextRequest) {
       ...(q
         ? {
             OR: [
-              { name: { contains: q } },
-              { city: { contains: q } },
-              { id: { contains: q } },
-              { operator: { contains: q } },
+              { name: { contains: q, mode: "insensitive" } },
+              { city: { contains: q, mode: "insensitive" } },
+              { id: { contains: q, mode: "insensitive" } },
+              { operator: { contains: q, mode: "insensitive" } },
             ],
           }
         : {}),
@@ -31,10 +31,10 @@ export async function GET(req: NextRequest) {
   });
 
   const latest = await prisma.$queryRaw<{ systemId: string; ts: string; bikesAvailable: number; availability: number }[]>`
-    SELECT s.systemId, s.ts, s.bikesAvailable, s.availability
-    FROM SystemSnapshot s
-    INNER JOIN (SELECT systemId, MAX(ts) AS m FROM SystemSnapshot GROUP BY systemId) t
-      ON s.systemId = t.systemId AND s.ts = t.m
+    SELECT s."systemId", s."ts", s."bikesAvailable", s."availability"
+    FROM "SystemSnapshot" s
+    INNER JOIN (SELECT "systemId", MAX("ts") AS m FROM "SystemSnapshot" GROUP BY "systemId") t
+      ON s."systemId" = t."systemId" AND s."ts" = t.m
   `;
   const byId = new Map(latest.map((r) => [r.systemId, r]));
 

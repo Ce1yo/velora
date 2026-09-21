@@ -14,9 +14,9 @@ async function overview() {
     prisma.system.findMany({ where: { lat: { not: null }, city: { not: null } }, distinct: ["city"], select: { city: true } }),
     prisma.system.findMany({ where: { lat: { not: null }, country: { not: null } }, distinct: ["country"], select: { country: true } }),
     prisma.$queryRaw<{ bikes: bigint | number | null }[]>`
-      SELECT COALESCE(SUM(s.bikesAvailable),0) AS bikes FROM SystemSnapshot s
-      INNER JOIN (SELECT systemId, MAX(ts) m FROM SystemSnapshot GROUP BY systemId) t
-      ON s.systemId=t.systemId AND s.ts=t.m`,
+      SELECT COALESCE(SUM(s."bikesAvailable"),0) AS bikes FROM "SystemSnapshot" s
+      INNER JOIN (SELECT "systemId", MAX("ts") m FROM "SystemSnapshot" GROUP BY "systemId") t
+      ON s."systemId"=t."systemId" AND s."ts"=t.m`,
   ]);
   return {
     systems,

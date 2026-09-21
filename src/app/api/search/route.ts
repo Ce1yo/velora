@@ -11,10 +11,10 @@ export async function GET(req: NextRequest) {
     prisma.system.findMany({
       where: {
         OR: [
-          { name: { contains: q } },
-          { city: { contains: q } },
-          { id: { contains: q } },
-          { operator: { contains: q } },
+          { name: { contains: q, mode: "insensitive" } },
+          { city: { contains: q, mode: "insensitive" } },
+          { id: { contains: q, mode: "insensitive" } },
+          { operator: { contains: q, mode: "insensitive" } },
         ],
       },
       take: 8,
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       select: { id: true, name: true, city: true, country: true, feedStatus: true, stationCount: true },
     }),
     prisma.station.findMany({
-      where: { name: { contains: q } },
+      where: { name: { contains: q, mode: "insensitive" } },
       take: 8,
       select: { id: true, name: true, systemId: true },
     }),

@@ -1,0 +1,22 @@
+name: Collect GBFS snapshots
+
+# Calls the deployed app's /api/collect endpoint every 5 minutes so VELORA
+# keeps building its own history even on a serverless host.
+# Required repo secrets: APP_URL (e.g. https://velora.vercel.app), CRON_SECRET.
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Trigger collection
+        run: |
+          curl -fsS -X POST "${{ secrets.APP_URL }}/api/collect" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d '{}'

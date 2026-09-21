@@ -14,13 +14,16 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       note: "No public trip dataset imported for this system. VELORA never infers trips from inventory changes.",
     });
   }
-  const [avgDuration, byHour] = await Promise.all([
+  const [avgDuration, hours] = await Promise.all([
     prisma.trip.aggregate({ where: { systemId: id }, _avg: { durationS: true } }),
-    prisma.$queryRaw<{ h: number; n: number }[]>`
-      SELECT CAST(strftime('%H', startTime) AS INTEGER) AS h, COUNT(*) AS n
-      FROM Trip WHERE systemId = ${id} GROUP BY h ORDER BY h
-    `,
+    prisma.trip.findMany({ where: { systemId: id }, select: { startTime: true }, take: 50000 }),
   ]);
+  const bucket = new Map<number, number>();
+  for (const t of hours) {
+    const h = t.startTime.getHours();
+    bucket.set(h, (bucket.get(h) ?? 0) + 1);
+  }
+  const byHour = [...bucket.entries()].sort((a, b) => a[0] - b[0]).map(([h, n]) => ({ h, n }));
   return NextResponse.json({
     available: true,
     count,

@@ -19,10 +19,10 @@ export default async function SystemsPage({
       ...(q
         ? {
             OR: [
-              { name: { contains: q } },
-              { city: { contains: q } },
-              { id: { contains: q } },
-              { operator: { contains: q } },
+              { name: { contains: q, mode: "insensitive" } },
+              { city: { contains: q, mode: "insensitive" } },
+              { id: { contains: q, mode: "insensitive" } },
+              { operator: { contains: q, mode: "insensitive" } },
             ],
           }
         : {}),
