@@ -7,10 +7,13 @@ import { enrichSystem, collectStatus } from "../src/lib/collect";
 async function main() {
   const args = process.argv.slice(2);
   const all = args.includes("--all");
+  const force = args.includes("--force");
   const limIdx = args.indexOf("--limit");
   const limit = limIdx >= 0 ? parseInt(args[limIdx + 1], 10) : 120;
 
-  const where = all ? {} : { OR: [{ priority: { gt: 0 } }, { enabled: true }] };
+  // Incremental by default: skip systems already enriched (have coordinates).
+  const base = force ? {} : { lat: null };
+  const where = all ? base : { ...base, OR: [{ priority: { gt: 0 } }, { enabled: true }] };
   const systems = await prisma.system.findMany({
     where,
     orderBy: { priority: "desc" },
