@@ -28,8 +28,8 @@ jobs:
         run: npx tsx scripts/import-catalog.ts
         env:
           # Session pooler (no connection_limit=1) — batch scripts need real concurrency
-          DATABASE_URL: ${{ secrets.DIRECT_URL }}
+          DATABASE_URL: ${{ secrets.DIRECT_URL }}?connection_limit=10&pool_timeout=60
       - name: Enrich priority systems
         run: npx tsx scripts/enrich-systems.ts --limit 80
         env:
-          DATABASE_URL: ${{ secrets.DIRECT_URL }}
+          DATABASE_URL: ${{ secrets.DIRECT_URL }}?connection_limit=10&pool_timeout=60

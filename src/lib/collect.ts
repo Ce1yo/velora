@@ -36,10 +36,11 @@ async function markError(systemId: string, error: string) {
  */
 export async function enrichSystem(systemId: string): Promise<{ ok: boolean; stationCount: number }> {
   const started = Date.now();
-  const system = await prisma.system.findUnique({ where: { id: systemId } });
-  if (!system) return { ok: false, stationCount: 0 };
-
+  let system: { id: string; name: string; gbfsUrl: string; operator: string | null; timezone: string | null; language: string | null; url: string | null } | null;
   try {
+    system = await prisma.system.findUnique({ where: { id: systemId } });
+    if (!system) return { ok: false, stationCount: 0 };
+
     const discovery = await fetchDiscovery(system.gbfsUrl);
     const [sysInfo, stationInfo, vehicleTypes] = await Promise.all([
       fetchSystemInformation(discovery),
@@ -48,24 +49,29 @@ export async function enrichSystem(systemId: string): Promise<{ ok: boolean; sta
     ]);
 
     if (stationInfo.length) {
-      await prisma.$transaction(
-        stationInfo.map((s) =>
-          prisma.station.upsert({
-            where: { id: `${systemId}:${s.stationId}` },
-            create: {
-              id: `${systemId}:${s.stationId}`,
-              systemId,
-              stationId: s.stationId,
-              name: s.name,
-              lat: s.lat,
-              lon: s.lon,
-              capacity: s.capacity,
-              regionId: s.regionId,
-            },
-            update: { name: s.name, lat: s.lat, lon: s.lon, capacity: s.capacity, regionId: s.regionId },
-          })
+      // Dedupe — a duplicated station_id would break the single-shot ON CONFLICT.
+      const seen = new Set<string>();
+      const rows = stationInfo.filter((s) => !seen.has(s.stationId) && seen.add(s.stationId));
+      // Single bulk upsert — per-station upserts over WAN exhaust the pool.
+      await prisma.$executeRaw`
+        INSERT INTO "Station" (id, "systemId", "stationId", name, lat, lon, capacity, "regionId")
+        SELECT * FROM unnest(
+          ${rows.map((s) => `${systemId}:${s.stationId}`)}::text[],
+          ${rows.map(() => systemId)}::text[],
+          ${rows.map((s) => s.stationId)}::text[],
+          ${rows.map((s) => s.name)}::text[],
+          ${rows.map((s) => s.lat)}::float8[],
+          ${rows.map((s) => s.lon)}::float8[],
+          ${rows.map((s) => s.capacity)}::int4[],
+          ${rows.map((s) => s.regionId)}::text[]
         )
-      );
+        ON CONFLICT (id) DO UPDATE SET
+          name = EXCLUDED.name,
+          lat = EXCLUDED.lat,
+          lon = EXCLUDED.lon,
+          capacity = EXCLUDED.capacity,
+          "regionId" = EXCLUDED."regionId"
+      `;
     }
 
     const lat = stationInfo.length ? stationInfo.reduce((a, s) => a + s.lat, 0) / stationInfo.length : null;
