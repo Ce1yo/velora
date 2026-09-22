@@ -26,5 +26,10 @@ jobs:
         run: npx prisma db push
       - name: Import GBFS catalog
         run: npx tsx scripts/import-catalog.ts
+        env:
+          # Session pooler (no connection_limit=1) — batch scripts need real concurrency
+          DATABASE_URL: ${{ secrets.DIRECT_URL }}
       - name: Enrich priority systems
         run: npx tsx scripts/enrich-systems.ts --limit 80
+        env:
+          DATABASE_URL: ${{ secrets.DIRECT_URL }}

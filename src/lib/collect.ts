@@ -13,16 +13,20 @@ import {
 const ELECTRIC_PROPULSION = new Set(["electric", "electric_assist"]);
 
 async function log(systemId: string, kind: string, ok: boolean, durationMs: number, extra: { stationCount?: number; error?: string } = {}) {
-  await prisma.collectionLog.create({
-    data: { systemId, kind, ok, durationMs, stationCount: extra.stationCount ?? null, error: extra.error ?? null },
-  });
+  try {
+    await prisma.collectionLog.create({
+      data: { systemId, kind, ok, durationMs, stationCount: extra.stationCount ?? null, error: extra.error ?? null },
+    });
+  } catch {}
 }
 
 async function markError(systemId: string, error: string) {
-  await prisma.system.update({
-    where: { id: systemId },
-    data: { feedStatus: "ERROR", feedError: error.slice(0, 500), lastCheckedAt: new Date() },
-  });
+  try {
+    await prisma.system.update({
+      where: { id: systemId },
+      data: { feedStatus: "ERROR", feedError: error.slice(0, 500), lastCheckedAt: new Date() },
+    });
+  } catch {}
 }
 
 /**
