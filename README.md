@@ -21,17 +21,24 @@ npm run dev          # web app → http://localhost:3000
 npm run worker       # snapshot collector (every COLLECT_INTERVAL_SECONDS, default 120s)
 ```
 
-## Deploy (Vercel)
+## Deploy (Vercel + Supabase)
 
-1. Create a Supabase project → Settings → Database → copy the **pooler (6543)**
-   URI into `DATABASE_URL` and the **session (5432)** URI into `DIRECT_URL`.
-2. Set env vars in Vercel: `DATABASE_URL`, `DIRECT_URL`, `CRON_SECRET`.
-3. Deploy — `postinstall` runs `prisma generate`; run `npx prisma db push`
-   locally once against the same DB to create tables, then
-   `npm run import:catalog && npm run enrich`.
-4. Collection cron: GitHub Actions workflow `.github/workflows/collect.yml`
-   runs every 5 min — add repo secrets `APP_URL` and `CRON_SECRET`.
-   Alternative: cron-job.org hitting `GET /api/collect?secret=<CRON_SECRET>`.
+1. Create a Supabase project → Settings → Database → Connection string.
+   Copy the **Transaction pooler** URI (port 6543) and the **Session** URI
+   (port 5432) — both are IPv4-reachable pooler endpoints.
+2. GitHub repo → Settings → Secrets and variables → Actions, add:
+   `DATABASE_URL` (pooler 6543 URI), `DIRECT_URL` (session 5432 URI),
+   `CRON_SECRET` (random string), `APP_URL` (your Vercel URL).
+3. GitHub → Actions → **Provision database** → Run workflow
+   (creates tables, imports the GBFS catalog, enriches priority systems).
+4. Vercel → Settings → Environment Variables: `DATABASE_URL`, `DIRECT_URL`,
+   `CRON_SECRET` → redeploy.
+5. Collection runs via `.github/workflows/collect.yml` every 5 min.
+   Alternative: cron-job.org → `GET <APP_URL>/api/collect?secret=<CRON_SECRET>`.
+
+Note: local dev needs outbound access to Postgres ports 5432/6543 — if the
+network blocks them (corporate firewall), run everything through GitHub
+Actions + Vercel, or use a connection that allows those ports.
 
 ## Data pipeline
 

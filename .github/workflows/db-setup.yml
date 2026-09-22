@@ -1,0 +1,30 @@
+name: Provision database
+
+# One-shot DB provisioning on Supabase — runs from GitHub's network because
+# the local network can't reach Postgres ports (5432/6543).
+# Required repo secrets: DATABASE_URL (pooler 6543), DIRECT_URL (session 5432).
+
+on:
+  workflow_dispatch:
+
+env:
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  DIRECT_URL: ${{ secrets.DIRECT_URL }}
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Push Prisma schema
+        run: npx prisma db push
+      - name: Import GBFS catalog
+        run: npx tsx scripts/import-catalog.ts
+      - name: Enrich priority systems
+        run: npx tsx scripts/enrich-systems.ts --limit 80
